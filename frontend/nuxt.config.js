@@ -1,6 +1,14 @@
 import colors from 'vuetify/es5/util/colors'
 
+const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
+  router: {
+    base: '/keyboard-speed-trainer/'
+  }
+} : {}
+
 export default {
+  ...routerBase,
+
   mode: 'universal',
   /*
    ** Headers of the page
