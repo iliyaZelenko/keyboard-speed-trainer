@@ -4,6 +4,17 @@
       class="game-info"
       :style="{ 'opacity': +gameStarted }"
     >
+      <span v-if="gameStarted">
+        You're typing article from wikipedia:
+        <a
+          :href="currentTextSource.content_urls.desktop.page"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          "{{ currentTextSource.title }}"
+        </a>
+      </span>
+      <br>
       <span class="grey--text">Characters:</span>
       {{ charactersCount }}
       <br>
@@ -11,13 +22,16 @@
       {{ charactersCount / 5 || 0 }}
     </div>
 
+    <!-- :style="{}" 'word-spacing': wordSpacing + 'px' -->
     <div class="text-main">
       <div
         ref="input"
         :class="{ 'text-written': true, 'text-written--disabled': timer.paused }"
         :contenteditable="!timer.paused"
         @input="onInput"
+        @keyup.enter="timer.pause"
       />
+      <!-- Идёт замена на &nbsp; чтобы не исчезали отступы по краям при отображении .replace(/\s/gm, '&nbsp;') -->
       <div
         class="text-to-write"
         @click="placeCaretAtEnd"
@@ -36,6 +50,9 @@
         @click="resume"
       >
         Resume
+        <v-icon right>
+          mdi-play
+        </v-icon>
       </v-btn>
       <v-btn
         v-if="!timer.paused"
@@ -44,6 +61,9 @@
         @click="timer.pause"
       >
         Pause
+        <v-icon right>
+          mdi-pause
+        </v-icon>
       </v-btn>
     </div>
     <div
@@ -57,6 +77,9 @@
         @click="showSettings = !showSettings"
       >
         Settings
+        <v-icon right>
+          mdi-settings
+        </v-icon>
       </v-btn>
 
       <v-expand-transition>
@@ -175,6 +198,7 @@ function restoreSelection (el) {
 export default {
   data () {
     return {
+      currentTextSource: null,
       textVariant: 'text',
       showSettings: false,
       dialog: false,
@@ -189,6 +213,9 @@ export default {
     }
   },
   computed: {
+    wordSpacing () {
+      return (typeof localStorage !== 'undefined' && localStorage.getItem('wordSpacing')) || 30
+    },
     textToWrite () {
       const start = this.errorStartIndex === null
         ? this.textWritten.length
@@ -216,25 +243,37 @@ export default {
     },
     showSettings () {
       this.$refs.input.focus()
+    },
+    async textToWrite (text) {
+      if (text.length < 15) {
+        this.text += '|' + await this.fetchText()
+      }
     }
   },
   async mounted () {
     this.$refs.input.focus()
-
-    function stripHtml (html) {
-      const tmp = document.createElement('div')
-
-      tmp.innerHTML = html
-
-      return tmp.textContent || tmp.innerText || ''
-    }
-
-    this.text = stripHtml(
-      (await this.$axios.get('https://www.randomtext.me/api/lorem/p-20/150-200')).data.text_out
-    ).slice(12)
-    this.text = this.text.charAt(0).toUpperCase() + this.text.slice(1)
+    this.text = await this.fetchText()
   },
   methods: {
+    async fetchText () {
+      function stripHtml (html) {
+        const tmp = document.createElement('div')
+
+        tmp.innerHTML = html
+
+        return tmp.textContent || tmp.innerText || ''
+      }
+
+      this.currentTextSource = (await this.$axios.get('https://en.wikipedia.org/api/rest_v1/page/random/summary')).data
+
+      return stripHtml(
+        // (await this.$axios.get('https://www.randomtext.me/api/lorem/p-20/150-200')).data.text_out
+        this.currentTextSource.extract
+        // https://en.wikipedia.org/api/rest_v1/page/random/summary
+      )
+      // нужно было для Lorem ipsum
+      // .slice(12)
+    },
     async resume () {
       this.timer.resume()
 
@@ -294,7 +333,7 @@ export default {
 
       saveSelection()
       setSelectionRange(this.$refs.input, start, end)
-      document.execCommand('bold', false)
+      document.execCommand('bold')
       restoreSelection(this.$refs.input)
     },
     placeCaretAtEnd () {
@@ -313,7 +352,7 @@ export default {
   justify-content center
   margin-top 15%
   font-family 'Slabo 27px', serif
-  font-size: 3.5em
+  font-size: 4.5em
 
   .text-written
     min-width 50%
