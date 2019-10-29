@@ -4,7 +4,10 @@
       class="game-info"
       :style="{ 'opacity': +gameStarted }"
     >
-      <span v-if="gameStarted">
+      <span
+        v-if="gameStarted"
+        class="grey--text"
+      >
         You're typing article from wikipedia:
         <a
           :href="currentTextSource.content_urls.desktop.page"
@@ -229,6 +232,8 @@ export default {
         .replace(/(\r\n|\n|\r)/gm, '')
         // много отступов на единственный пробел
         .replace(/\s\s+/gm, ' ')
+        // удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
+        .replace(/[^\x20-\x7E]+/g, '')
     },
     isError () {
       return this.textFormatted.slice(0, this.textWritten.length).trim() !== this.textWritten.trim()
