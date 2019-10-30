@@ -1,5 +1,9 @@
 <template>
   <div>
+    <div style="display: flex; justify-content: flex-end; height: 52px;">
+      <LangSwitcher v-model="currentLang" />
+    </div>
+
     <div
       class="game-info"
       :style="{ 'opacity': +gameStarted }"
@@ -169,6 +173,8 @@
 <script>
 import { placeCaretAtEnd, setSelectionRange } from '~/utils/caret'
 import { Timer } from '~/utils/timer'
+import LangSwitcher from '../components/LangSwitcher'
+// import { removeDiacritics } from '~/utils/removeDiacritics'
 
 // TODO отрефакторить
 var savedRange
@@ -199,8 +205,10 @@ function restoreSelection (el) {
 }
 
 export default {
+  components: { LangSwitcher },
   data () {
     return {
+      currentLang: (typeof localStorage !== 'undefined' && localStorage.getItem('currentLang')) || 'ru',
       currentTextSource: null,
       textVariant: 'text',
       showSettings: false,
@@ -227,13 +235,21 @@ export default {
       return this.textFormatted.slice(start)
     },
     textFormatted () {
-      return this.text
+      // вариант 2: удаляет символы акцента, например: è, é, á...
+      return this.text // removeDiacritics(
         // без переносов
         .replace(/(\r\n|\n|\r)/gm, '')
         // много отступов на единственный пробел
         .replace(/\s\s+/gm, ' ')
+        .replace(/—/gm, '-')
+        .replace(/[«»]/gm, '"')
         // удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
-        .replace(/[^\x20-\x7E]+/g, '')
+        // .replace(/[^\x20-\x7E]+/g, '')
+        // вариант 2: удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
+        // .replace(/[^\x20-\x7E]/g, '')
+        // удаляет символы акцента, например: è, é, á... https://stackoverflow.com/a/37511463/5286034
+        /* .normalize('NFD') */ .replace(/[\u0300-\u036f]/g, '')
+      // )
     },
     isError () {
       return this.textFormatted.slice(0, this.textWritten.length).trim() !== this.textWritten.trim()
@@ -243,6 +259,10 @@ export default {
     }
   },
   watch: {
+    currentLang (val) {
+      localStorage.setItem('currentLang', val)
+      location.reload()
+    },
     dialog (val) {
       if (!val) location.reload()
     },
@@ -257,6 +277,7 @@ export default {
   },
   async mounted () {
     this.$refs.input.focus()
+    // 'ă«123»—йё,Джохо́р"́ "根室振興局'
     this.text = await this.fetchText()
   },
   methods: {
@@ -269,7 +290,7 @@ export default {
         return tmp.textContent || tmp.innerText || ''
       }
 
-      this.currentTextSource = (await this.$axios.get('https://en.wikipedia.org/api/rest_v1/page/random/summary')).data
+      this.currentTextSource = (await this.$axios.get(`https://${this.currentLang}.wikipedia.org/api/rest_v1/page/random/summary`)).data
 
       return stripHtml(
         // (await this.$axios.get('https://www.randomtext.me/api/lorem/p-20/150-200')).data.text_out
