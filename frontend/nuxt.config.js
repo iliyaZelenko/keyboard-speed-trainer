@@ -14,7 +14,7 @@ export default {
    ** Headers of the page
    */
   head: {
-    titleTemplate: '%s - Keyboard speed trainer',
+    // titleTemplate: '%s - Keyboard speed trainer',
     title: 'Keyboard speed trainer',
     meta: [
       { charset: 'utf-8' },
@@ -27,7 +27,8 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Slabo+27px&display=swap' }
+      // { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Slabo+27px&display=swap' }
+      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Merriweather:300' }
     ]
   },
   /*
@@ -58,6 +59,16 @@ export default {
     '@nuxtjs/axios',
     '@nuxtjs/pwa'
   ],
+
+  pwa: {
+    manifest: {
+      name: 'Keyboard speed trainer'
+    },
+    meta: {
+      name: 'Keyboard speed trainer'
+    }
+  },
+
   /*
    ** Axios module configuration
    ** See https://axios.nuxtjs.org/options

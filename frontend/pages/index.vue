@@ -1,26 +1,32 @@
 <template>
-  <div>
-    <div style="display: flex; justify-content: flex-end; height: 52px;">
+  <div
+    :class="{
+      'game-started': gameStarted,
+      'game-text-loaded': currentTextSource
+    }"
+  >
+    <div style="float: right;">
       <LangSwitcher v-model="currentLang" />
     </div>
 
+    <span
+      v-if="currentTextSource"
+      style="float: left;"
+      class="grey--text"
+    >
+      Current text taken from wikipedia's article
+      <a
+        :href="currentTextSource.content_urls.desktop.page"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        "{{ currentTextSource.title }}"
+      </a>
+      .
+    </span>
     <div
       class="game-info"
-      :style="{ 'opacity': +gameStarted }"
     >
-      <span
-        v-if="gameStarted"
-        class="grey--text"
-      >
-        You're typing article from wikipedia:
-        <a
-          :href="currentTextSource.content_urls.desktop.page"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          "{{ currentTextSource.title }}"
-        </a>
-      </span>
       <br>
       <span class="grey--text">Characters:</span>
       {{ charactersCount }}
@@ -35,6 +41,7 @@
         ref="input"
         :class="{ 'text-written': true, 'text-written--disabled': timer.paused }"
         :contenteditable="!timer.paused"
+        spellcheck="false"
         @input="onInput"
         @keyup.enter="timer.pause"
       />
@@ -171,6 +178,7 @@
 </template>
 
 <script>
+/* eslint-disable */
 import { placeCaretAtEnd, setSelectionRange } from '~/utils/caret'
 import { Timer } from '~/utils/timer'
 import LangSwitcher from '../components/LangSwitcher'
@@ -208,18 +216,20 @@ export default {
   components: { LangSwitcher },
   data () {
     return {
-      currentLang: (typeof localStorage !== 'undefined' && localStorage.getItem('currentLang')) || 'ru',
+      currentLang: (typeof localStorage !== 'undefined' && localStorage.getItem('currentLang')) || 'en',
       currentTextSource: null,
       textVariant: 'text',
       showSettings: false,
       dialog: false,
       gameStarted: false,
+      // не использовать напрямую! Вместо этого через textWrittenFormatted
       textWritten: '',
       ignoreInput: false,
       seconds: 0,
       timer: false,
       // TODO это не правильно, ошибка может быть в любом месте
       errorStartIndex: null,
+      // не использовать напрямую! Вместо этого через textFormatted
       text: 'Text loading...' // 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'
     }
   },
@@ -229,10 +239,16 @@ export default {
     },
     textToWrite () {
       const start = this.errorStartIndex === null
-        ? this.textWritten.length
+        ? this.textWrittenFormatted.length
         : this.errorStartIndex
 
       return this.textFormatted.slice(start)
+    },
+    textWrittenFormatted () {
+      return this.textWritten
+        // Удаление очень странных пробелов, потратил час чтобы разобраться с ними.
+        // eslint-disable-next-line no-irregular-whitespace
+        .replace(/ /gm, ' ').replace(/ /gm, ' ')
     },
     textFormatted () {
       // вариант 2: удаляет символы акцента, например: è, é, á...
@@ -241,8 +257,18 @@ export default {
         .replace(/(\r\n|\n|\r)/gm, '')
         // много отступов на единственный пробел
         .replace(/\s\s+/gm, ' ')
-        .replace(/—/gm, '-')
+        // тире на обычный дефис
+        .replace(/[—–-]/gm, '-')
+        .replace(/-/gm, '-')
+        // TODO повтой строки
+        .replace(/-/gm, '-')
         .replace(/[«»]/gm, '"')
+        .replace(/[„“]/gm, '"')
+        // Удаление очень странных пробелов, потратил час чтобы разобраться с ними.
+        // eslint-disable-next-line no-irregular-whitespace
+        .replace(/ /gm, ' ').replace(/ /gm, ' ')
+        // eslint-disable-next-line no-irregular-whitespace
+        // !!! .replace(/\s/gm, ' ')
         // удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
         // .replace(/[^\x20-\x7E]+/g, '')
         // вариант 2: удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
@@ -252,10 +278,10 @@ export default {
       // )
     },
     isError () {
-      return this.textFormatted.slice(0, this.textWritten.length).trim() !== this.textWritten.trim()
+      return this.textFormatted.slice(0, this.textWrittenFormatted.length) !== this.textWrittenFormatted
     },
     charactersCount () {
-      return this.textWritten.slice(0, this.errorStartIndex || undefined).length
+      return this.textWrittenFormatted.slice(0, this.errorStartIndex || undefined).length
     }
   },
   watch: {
@@ -278,6 +304,7 @@ export default {
   async mounted () {
     this.$refs.input.focus()
     // 'ă«123»—йё,Джохо́р"́ "根室振興局'
+    // '1 - f -  f' +
     this.text = await this.fetchText()
   },
   methods: {
@@ -313,9 +340,13 @@ export default {
       this.timer = new Timer(() => {
         this.seconds++
 
+        if (this.seconds === 50) {
+          // сообщает что осталось мало времени
+          document.querySelector('#app').classList.add('no-time')
+        }
         if (this.seconds === 60) {
           this.timer.clear()
-          // clearInterval(this.timer)
+          document.querySelector('#app').classList.remove('no-time')
 
           this.dialog = true
         }
@@ -334,8 +365,8 @@ export default {
 
       this.$nextTick(() => {
         if (this.isError) {
-          if (this.errorStartIndex === null) this.errorStartIndex = this.textWritten.length - 1
-          this.markError(this.errorStartIndex, this.textWritten.length)
+          if (this.errorStartIndex === null) this.errorStartIndex = this.textWrittenFormatted.length - 1
+          this.markError(this.errorStartIndex, this.textWrittenFormatted.length)
         } else {
           this.errorStartIndex = null
           this.clearError()
@@ -344,12 +375,12 @@ export default {
     },
     clearError () {
       // если пустой контент, то чтобы не мешал, а то не вызывается onInput при clearError (если пустой контент)
-      if (!this.textWritten) return
+      if (!this.textWrittenFormatted) return
 
       this.ignoreInput = true
 
       saveSelection()
-      setSelectionRange(this.$refs.input, 0, this.textWritten.length)
+      setSelectionRange(this.$refs.input, 0, this.textWrittenFormatted.length)
       document.execCommand('removeFormat')
       // TODO если ошибка исправлена, то можно возвращать на 0 позицию placeCaretAtEnd
       restoreSelection(this.$refs.input)
@@ -370,14 +401,28 @@ export default {
 </script>
 
 <style lang="stylus">
+#app
+  transition background 0.3s
+
+  &.no-time
+    background #d9fffa !important
+
 .game-info
   transition opacity 0.3s
+  opacity 0
+  pointer-events none
+
+  // http://stylus-lang.com/docs/selectors.html#initial-reference
+  .game-started &
+    opacity 1
+    pointer-events initial
 
 .text-main
   display flex
   justify-content center
   margin-top 15%
-  font-family 'Slabo 27px', serif
+  font-family: Merriweather !important
+  /* font-family 'Slabo 27px', serif */
   font-size: 4.5em
 
   .text-written
@@ -393,7 +438,7 @@ export default {
       opacity 0.5
 
     b
-      text-decoration line-through
+      text-decoration underline
       font-weight normal
       color crimson
 
@@ -407,4 +452,8 @@ export default {
   .text-to-write
     min-width 50%
     white-space: pre
+    color: #9e9e9e !important
+
+    .game-text-loaded &
+      color: inherit !important
 </style>

@@ -1,6 +1,6 @@
 <template>
   <v-menu
-    max-height="800"
+    max-height="300"
     nudge-left="40"
     offset-y
   >
