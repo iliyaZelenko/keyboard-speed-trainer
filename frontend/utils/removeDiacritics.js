@@ -99,7 +99,44 @@ for (var i=0; i < defaultDiacriticsRemovalMap .length; i++){
 
 // "what?" version ... http://jsperf.com/diacritics/12
 export function removeDiacritics (str) {
-  return str.replace(/[^\u0000-\u007E]/g, function(a){
-    return diacriticsMap[a] || a;
-  });
+  return myFormatText(str)
+    .replace(/[^\u0000-\u007E]/g, function (a) {
+      return diacriticsMap[a] || a;
+    });
+}
+
+// Мой код для очистки текста. Удаляет символы акцента, например: è, é, á... Также, ß ø ł ł Ł... Вот ещё примеры https://stackoverflow.com/a/17694737/5286034
+function myFormatText (str) {
+  // без переносов
+  return str.replace(/(\r\n|\n|\r)/gm, '')
+  // много отступов на единственный пробел
+    .replace(/\s\s+/gm, ' ')
+    // тире на обычный дефис
+    .replace(/[—–-]/gm, '-')
+    .replace(/-/gm, '-')
+    // TODO повтой строки
+    .replace(/-/gm, '-')
+    .replace(/[«»]/gm, '"')
+    .replace(/[„“]/gm, '"')
+
+    // Градусы
+    .replace(/°/gm, ' ')
+    .replace(/′/gm, '\'')
+    .replace(/″/gm, '"')
+
+    // Удаление очень странных пробелов, потратил час чтобы разобраться с ними.
+    // eslint-disable-next-line no-irregular-whitespace
+    .replace(/ /gm, ' ').replace(/ /gm, ' ')
+    .replace(/й/gm, '<REPLACE_ME_WITH_U>')
+    .replace(/ё/gm, '<REPLACE_ME_WITH_E>')
+    // eslint-disable-next-line no-irregular-whitespace
+    // !!! .replace(/\s/gm, ' ')
+    // удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
+    // .replace(/[^\x20-\x7E]+/g, '')
+    // вариант 2: удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
+    // .replace(/[^\x20-\x7E]/g, '')
+    // удаляет символы акцента, например: è, é, á... Но также преобразовывает "й" и "ё". https://stackoverflow.com/a/37511463/5286034
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/<REPLACE_ME_WITH_U>/gm, 'й')
+    .replace(/<REPLACE_ME_WITH_E>/gm, 'ё')
 }

@@ -289,7 +289,7 @@
 import { placeCaretAtEnd, setSelectionRange } from '~/utils/caret'
 import { Timer } from '~/utils/timer'
 import LangSwitcher from '../components/LangSwitcher'
-// import { removeDiacritics } from '~/utils/removeDiacritics'
+import { removeDiacritics } from '~/utils/removeDiacritics'
 
 // TODO отрефакторить
 var savedRange
@@ -333,15 +333,14 @@ async function fetchText (lang) {
   }
 
   const textSource = (await this.$axios.get(`https://${lang}.wikipedia.org/api/rest_v1/page/random/summary`)).data
-  // á'ă«123»—йё,Джохо́р"́ "根室振興局'
   return {
     textSource,
     // `á'ă«123»—йё,Джохо́р"́ "根室振興局'`
-    text: stripHtml(
+    text: removeDiacritics(stripHtml(
       // (await this.$axios.get('https://www.randomtext.me/api/lorem/p-20/150-200')).data.text_out
       textSource.extract
       // https://en.wikipedia.org/api/rest_v1/page/random/summary
-    )
+    ))
   }
   // нужно было для Lorem ipsum
   // .slice(12)
@@ -357,7 +356,7 @@ export default {
 
     return {
       currentLang,
-      text,
+      text: text,
       textSources: [textSource]
     }
   },
@@ -403,41 +402,7 @@ export default {
         .replace(/ /gm, ' ').replace(/ /gm, ' ')
     },
     textFormatted () {
-      // вариант 2: удаляет символы акцента, например: è, é, á...
-      return this.text // removeDiacritics(
-        // без переносов
-        .replace(/(\r\n|\n|\r)/gm, '')
-        // много отступов на единственный пробел
-        .replace(/\s\s+/gm, ' ')
-        // тире на обычный дефис
-        .replace(/[—–-]/gm, '-')
-        .replace(/-/gm, '-')
-        // TODO повтой строки
-        .replace(/-/gm, '-')
-        .replace(/[«»]/gm, '"')
-        .replace(/[„“]/gm, '"')
-
-        // Градусы
-        .replace(/°/gm, ' ')
-        .replace(/′/gm, '\'')
-        .replace(/″/gm, '"')
-
-        // Удаление очень странных пробелов, потратил час чтобы разобраться с ними.
-        // eslint-disable-next-line no-irregular-whitespace
-        .replace(/ /gm, ' ').replace(/ /gm, ' ')
-        .replace(/й/gm, '<REPLACE_ME_WITH_U>')
-        .replace(/ё/gm, '<REPLACE_ME_WITH_E>')
-        // eslint-disable-next-line no-irregular-whitespace
-        // !!! .replace(/\s/gm, ' ')
-        // удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
-        // .replace(/[^\x20-\x7E]+/g, '')
-        // вариант 2: удаляет символы которых нет на клавиатуре http://bit.ly/2q0ehn4
-        // .replace(/[^\x20-\x7E]/g, '')
-        // удаляет символы акцента, например: è, é, á... Но также преобразовывает "й" и "ё". https://stackoverflow.com/a/37511463/5286034
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/<REPLACE_ME_WITH_U>/gm, 'й')
-        .replace(/<REPLACE_ME_WITH_E>/gm, 'ё')
-      // )
+      return this.text
     },
     isError () {
       return this.textFormatted.slice(0, this.textWrittenFormatted.length) !== this.textWrittenFormatted

@@ -159,11 +159,6 @@ export default {
           wikiDomain: 'sk',
           flag: 'sk'
         },
-        // Словацкий
-        {
-          wikiDomain: 'sk',
-          flag: 'sk'
-        },
         // Казахский
         {
           wikiDomain: 'kk',
