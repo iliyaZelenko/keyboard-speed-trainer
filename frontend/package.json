@@ -26,7 +26,7 @@
   "dependencies": {
     "@nuxtjs/axios": "^5.3.6",
     "@nuxtjs/pwa": "^3.0.0-0",
-    "codemirror": "^5.49.2",
+    "codemirror": "^5.58.2",
     "cookie-universal-nuxt": "^2.0.18",
     "nuxt": "^2.0.0"
   },
