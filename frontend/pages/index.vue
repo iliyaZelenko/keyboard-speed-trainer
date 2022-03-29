@@ -69,28 +69,6 @@
               {{ currentTextSource.description }}
             </div>
           </v-card-text>
-
-          <v-card-actions>
-            <v-btn
-              text
-              color="deep-purple accent-4"
-            >
-              Read
-            </v-btn>
-            <v-btn
-              text
-              color="deep-purple accent-4"
-            >
-              Bookmark
-            </v-btn>
-            <v-spacer />
-            <v-btn icon>
-              <v-icon>mdi-heart</v-icon>
-            </v-btn>
-            <v-btn icon>
-              <v-icon>mdi-share-variant</v-icon>
-            </v-btn>
-          </v-card-actions>
         </v-card>
       </v-menu>
 
@@ -170,7 +148,7 @@
         >
           Settings
           <v-icon right>
-            mdi-settings
+            mdi-cog
           </v-icon>
         </v-btn>
 
@@ -462,11 +440,11 @@ export default {
 
         if (this.seconds === GAME_TIME - 10) {
           // сообщает что осталось мало времени
-          document.querySelector('#app').classList.add('no-time')
+          document.body.classList.add('no-time')
         }
         if (this.seconds === GAME_TIME) {
           this.timer.clear()
-          document.querySelector('#app').classList.remove('no-time')
+          document.body.classList.remove('no-time')
 
           this.dialog = true
         }
@@ -521,7 +499,7 @@ export default {
 </script>
 
 <style lang="stylus">
-#app
+body
   transition background 0.3s
 
   &.no-time

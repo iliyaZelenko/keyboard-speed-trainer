@@ -13,7 +13,7 @@
       >
         <div>
           <v-img
-            :src="`https://www.countryflags.io/${currentLang.flag}/shiny/64.png`"
+            :src="`https://flagcdn.com/60x45/${currentLang.flag}.png`"
             :alt="`flag(${currentLang.flag})`"
             width="32"
           />
@@ -29,7 +29,7 @@
       >
         <v-list-item-avatar tile>
           <v-img
-            :src="`https://www.countryflags.io/${lang.flag}/shiny/64.png`"
+            :src="`https://flagcdn.com/60x45/${lang.flag}.png`"
             :alt="`flag(${lang.flag})`"
           />
         </v-list-item-avatar>
