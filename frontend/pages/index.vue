@@ -499,6 +499,9 @@ export default {
 </script>
 
 <style lang="stylus">
+.v-application
+  background inherit !important
+
 body
   transition background 0.3s
 
