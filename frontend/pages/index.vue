@@ -440,11 +440,11 @@ export default {
 
         if (this.seconds === GAME_TIME - 10) {
           // сообщает что осталось мало времени
-          document.body.classList.add('no-time')
+          document.querySelector('#app').classList.add('no-time')
         }
         if (this.seconds === GAME_TIME) {
           this.timer.clear()
-          document.body.classList.remove('no-time')
+          document.querySelector('#app').classList.remove('no-time')
 
           this.dialog = true
         }
@@ -499,10 +499,7 @@ export default {
 </script>
 
 <style lang="stylus">
-.v-application
-  background inherit !important
-
-body
+#app
   transition background 0.3s
 
   &.no-time
