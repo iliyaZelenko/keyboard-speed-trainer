@@ -327,7 +327,7 @@ import {resultsCollection, analytics, auth} from "~/plugins/firebase";
 
 // Initialize the FirebaseUI Widget using Firebase.
 // const ui = new firebaseui.auth.AuthUI(auth);
-
+const userIdAnonymous = 'anonymous_' + new Date().toISOString();
 
 // TODO отрефакторить
 var savedRange
@@ -570,8 +570,10 @@ export default {
     startGame () {
       this.gameStarted = true
 
+      const userId = this.user ? this.user.uid : userIdAnonymous;
+
       logEvent(analytics, 'game_start', {
-        userId: this.user.uid,
+        userId,
       });
 
       this.timer = new Timer(async () => {
@@ -590,7 +592,7 @@ export default {
           const doc = await addDoc(resultsCollection, {
             WPM: this.WPM,
             CPM: this.charactersCount,
-            userId: this.user.uid,
+            userId,
             textSources: this.textSources.map(i => ({
               URL: i.content_urls.desktop.page,
               title: i.title,
@@ -602,7 +604,7 @@ export default {
           logEvent(analytics, 'game_results', {
             WPM: this.WPM,
             CPM: this.charactersCount,
-            userId: this.user.uid,
+            userId,
             lang: this.currentLang,
             docId: doc.id,
           });
