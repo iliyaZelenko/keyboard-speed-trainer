@@ -5,9 +5,10 @@ const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
     base: '/keyboard-speed-trainer/'
   }
 } : {}
-
 export default {
   ...routerBase,
+
+  ssr: false,
 
   /*
    ** Headers of the page
@@ -41,11 +42,12 @@ export default {
   /*
    ** Plugins to load before mounting the App
    */
-  plugins: [],
+  plugins: ['~/plugins/firebase'],
   /*
    ** Nuxt.js dev-modules
    */
   buildModules: [
+    '@nuxt/typescript-build',
     // Doc: https://github.com/nuxt-community/eslint-module
     '@nuxtjs/eslint-module',
     '@nuxtjs/vuetify'
@@ -58,6 +60,23 @@ export default {
     '@nuxtjs/axios',
     '@nuxtjs/pwa',
     'cookie-universal-nuxt'
+    // [
+    //   '@nuxtjs/firebase',
+    //   {
+    //     config: {
+    //       apiKey: 'AIzaSyBN9S58IVuZuQwezIYxMI80QMRxAJKxZ_Q',
+    //       authDomain: 'keyboard-speed-trainer.firebaseapp.com',
+    //       projectId: 'keyboard-speed-trainer',
+    //       storageBucket: 'keyboard-speed-trainer.appspot.com',
+    //       messagingSenderId: '549225906484',
+    //       appId: '1:549225906484:web:3b52af894ce13b02112561',
+    //       measurementId: 'G-EQCFL53LGG'
+    //     },
+    //     services: {
+    //       auth: true
+    //     }
+    //   }
+    // ]
   ],
 
   pwa: {
@@ -99,6 +118,7 @@ export default {
    ** Build configuration
    */
   build: {
+    transpile: ['chart.js'],
     /*
      ** You can extend webpack config here
      */

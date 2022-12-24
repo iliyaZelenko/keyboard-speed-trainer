@@ -5,11 +5,11 @@
   "author": "Ilya",
   "private": true,
   "scripts": {
-    "dev": "nuxt",
+    "dev": "NODE_OPTIONS='--openssl-legacy-provider' nuxt",
     "build": "nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate",
-    "build:gh-pages": "cross-env DEPLOY_ENV=GH_PAGES nuxt build --spa",
+    "build:gh-pages": "NODE_OPTIONS='--openssl-legacy-provider' cross-env DEPLOY_ENV=GH_PAGES nuxt build --spa",
     "generate:gh-pages": "cross-env DEPLOY_ENV=GH_PAGES nuxt generate",
     "deploy": "push-dir --dir=dist --branch=gh-pages --cleanup",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
@@ -25,18 +25,23 @@
   },
   "dependencies": {
     "@nuxtjs/axios": "^5.3.6",
+    "@nuxtjs/firebase": "^8.0.0",
     "@nuxtjs/pwa": "^3.0.0-0",
+    "chart.js": "^4.1.1",
     "codemirror": "^5.49.2",
     "cookie-universal-nuxt": "^2.0.18",
+    "firebase": "^9.15.0",
+    "firebaseui": "^6.0.2",
     "nuxt": "^2.0.0"
   },
   "devDependencies": {
+    "@nuxt/types": "^2.15.8",
+    "@nuxt/typescript-build": "^2.1.0",
     "@nuxtjs/eslint-config": "^1.0.1",
     "@nuxtjs/eslint-module": "^1.0.0",
     "@nuxtjs/vuetify": "^1.0.0",
     "@vue/test-utils": "^1.0.0-beta.27",
     "babel-eslint": "^10.0.1",
-    "babel-jest": "^24.1.0",
     "cross-env": "^6.0.3",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^4.1.0",
@@ -48,14 +53,12 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "eslint-plugin-vue": "^5.2.3",
+    "eslint-plugin-vue": "^6.0.0",
     "husky": "^2.6.0",
-    "jest": "^24.1.0",
-    "lint-staged": "^8.2.1",
+    "lint-staged": "^13.1.0",
     "prettier": "^1.16.4",
     "push-dir": "^0.4.1",
     "stylus": "^0.54.7",
-    "stylus-loader": "^3.0.2",
-    "vue-jest": "^4.0.0-0"
+    "stylus-loader": "^3.0.2"
   }
 }

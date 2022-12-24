@@ -15,6 +15,9 @@ export function Timer (callback, delay) {
     window.setTimeout(this.setTimeout.bind(this), remaining)
     this.paused = false
   }
+  this.toggle = () => {
+    this.paused ? this.resume() : this.pause()
+  }
   this.setTimeout = () => {
     this.clear()
     this.timerId = window.setInterval(() => {

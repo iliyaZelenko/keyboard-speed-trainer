@@ -27,7 +27,17 @@
         :color="value === lang.wikiDomain ? 'success' : null"
         @click="$emit('input', lang.wikiDomain)"
       >
-        <v-list-item-avatar tile>
+        <template v-if="withAnyOption && lang.wikiDomain === null">
+          <v-list-item-content>
+            <v-list-item-title>
+              Any
+            </v-list-item-title>
+          </v-list-item-content>
+        </template>
+        <v-list-item-avatar
+          v-else
+          tile
+        >
           <v-img
             :src="`https://flagcdn.com/60x45/${lang.flag}.png`"
             :alt="`flag(${lang.flag})`"
@@ -49,10 +59,14 @@ export default {
     value: {
       type: String,
       default: 'en'
+    },
+    withAnyOption: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
-    return {
+    const res = {
       languages: [
         // Английский
         {
@@ -192,6 +206,14 @@ export default {
         // 'sk'
       ]
     }
+
+    if (this.withAnyOption) {
+      res.languages.unshift({
+        wikiDomain: null
+      })
+    }
+
+    return res
   },
   computed: {
     currentLang () {

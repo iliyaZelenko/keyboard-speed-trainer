@@ -5,6 +5,8 @@
     }"
     style="min-height: 100%;"
   >
+    <div id="firebaseui-auth-container" />
+
     <v-row
       v-if="loadingRestartGame"
       style="height: 90vh;"
@@ -16,6 +18,53 @@
     </v-row>
     <div v-else>
       <div style="float: right;">
+        <span class="mr-5">
+          <v-menu
+            v-if="user"
+            offset-y
+            open-on-hover
+          >
+            <template #activator="{ on, attrs }">
+              <span
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-avatar
+                  size="35"
+                  class="mr-2"
+                >
+                  <img
+                    :src="user.photoURL"
+                    alt="John"
+                  >
+                </v-avatar>
+
+                {{ user.displayName }}
+              </span>
+            </template>
+            <v-list>
+              <v-list-item @click="logout">
+                <v-list-item-title>
+                  Logout
+                </v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="$router.push('/stats')">
+                <v-list-item-title>
+                  Stats
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+          <v-btn
+            v-else
+            color="primary"
+            @click="auth"
+          >
+            <v-icon left>mdi-account</v-icon>
+            Auth
+          </v-btn>
+        </span>
+
         <LangSwitcher v-model="currentLang" />
       </div>
 
@@ -98,7 +147,6 @@
             :contenteditable="!timer.paused"
             spellcheck="false"
             @input="onInput"
-            @keyup.enter="timer.pause"
           />
           <!-- Идёт замена на &nbsp; чтобы не исчезали отступы по краям при отображении .replace(/\s/gm, '&nbsp;') -->
           <div
@@ -136,64 +184,64 @@
           </v-icon>
         </v-btn>
       </div>
-      <div
-        v-else
-        class="text-center mt-5"
-      >
-        <v-btn
-          v-if="!timer.paused"
-          color="primary"
-          depressed
-          @click="showSettings = !showSettings"
-        >
-          Settings
-          <v-icon right>
-            mdi-cog
-          </v-icon>
-        </v-btn>
+      <!--      <div-->
+      <!--        v-else-->
+      <!--        class="text-center mt-5"-->
+      <!--      >-->
+      <!--        <v-btn-->
+      <!--          v-if="!timer.paused"-->
+      <!--          color="primary"-->
+      <!--          depressed-->
+      <!--          @click="showSettings = !showSettings"-->
+      <!--        >-->
+      <!--          Settings-->
+      <!--          <v-icon right>-->
+      <!--            mdi-cog-->
+      <!--          </v-icon>-->
+      <!--        </v-btn>-->
 
-        <v-expand-transition>
-          <v-card
-            v-show="showSettings"
-            width="500"
-            class="mx-auto mt-3"
-          >
-            <v-card-text>
-              <v-subheader>
-                Text variant
-              </v-subheader>
-              <v-radio-group
-                v-model="textVariant"
-                row
-              >
-                <v-radio
-                  label="Text"
-                  value="text"
-                />
-                <v-radio
-                  label="Special symbols"
-                  value="specialSymbols"
-                />
-                <v-radio
-                  label="Code"
-                  value="code"
-                />
-                <v-radio
-                  label="Custom text"
-                  value="custom"
-                />
-              </v-radio-group>
+      <!--        <v-expand-transition>-->
+      <!--          <v-card-->
+      <!--            v-show="showSettings"-->
+      <!--            width="500"-->
+      <!--            class="mx-auto mt-3"-->
+      <!--          >-->
+      <!--            <v-card-text>-->
+      <!--              <v-subheader>-->
+      <!--                Text variant-->
+      <!--              </v-subheader>-->
+      <!--              <v-radio-group-->
+      <!--                v-model="textVariant"-->
+      <!--                row-->
+      <!--              >-->
+      <!--                <v-radio-->
+      <!--                  label="Text"-->
+      <!--                  value="text"-->
+      <!--                />-->
+      <!--                <v-radio-->
+      <!--                  label="Special symbols"-->
+      <!--                  value="specialSymbols"-->
+      <!--                />-->
+      <!--                <v-radio-->
+      <!--                  label="Code"-->
+      <!--                  value="code"-->
+      <!--                />-->
+      <!--                <v-radio-->
+      <!--                  label="Custom text"-->
+      <!--                  value="custom"-->
+      <!--                />-->
+      <!--              </v-radio-group>-->
 
-              <v-textarea
-                v-if="textVariant === 'custom'"
-                v-model="text"
-                filled
-                label="Your custom text"
-              />
-            </v-card-text>
-          </v-card>
-        </v-expand-transition>
-      </div>
+      <!--              <v-textarea-->
+      <!--                v-if="textVariant === 'custom'"-->
+      <!--                v-model="text"-->
+      <!--                filled-->
+      <!--                label="Your custom text"-->
+      <!--              />-->
+      <!--            </v-card-text>-->
+      <!--          </v-card>-->
+      <!--        </v-expand-transition>-->
+      <!--      </div>-->
 
       <v-dialog
         v-model="dialog"
@@ -212,7 +260,7 @@
             <span class="font-weight-bold">
               WPM:
             </span>
-            {{ Math.round(charactersCount / 5) }}
+            {{ WPM }}
             <br>
             <span class="font-weight-bold">
               CPM:
@@ -268,6 +316,18 @@ import { placeCaretAtEnd, setSelectionRange } from '~/utils/caret'
 import { Timer } from '~/utils/timer'
 import LangSwitcher from '../components/LangSwitcher'
 import { removeDiacritics } from '~/utils/removeDiacritics'
+import { initializeApp } from 'firebase/app';
+import { getAnalytics, logEvent } from "firebase/analytics";
+// import * as firebaseui from "firebaseui";
+// import "firebaseui/dist/firebaseui.css";
+import { signInWithPopup, setPersistence, browserLocalPersistence, onAuthStateChanged, getAuth, EmailAuthProvider, GoogleAuthProvider, PhoneAuthProvider } from "firebase/auth";
+import { addDoc, collection } from "firebase/firestore";
+import { getFirestore, Timestamp } from "firebase/firestore";
+import {resultsCollection, analytics, auth} from "~/plugins/firebase";
+
+// Initialize the FirebaseUI Widget using Firebase.
+// const ui = new firebaseui.auth.AuthUI(auth);
+
 
 // TODO отрефакторить
 var savedRange
@@ -340,6 +400,8 @@ export default {
   },
   data () {
     return {
+      user: null,
+      ui: null,
       textSources: [],
       loadingMoreText: false,
       loadingRestartGame: false,
@@ -387,6 +449,9 @@ export default {
     },
     charactersCount () {
       return this.textWrittenFormatted.slice(0, this.errorStartIndex || undefined).length
+    },
+    WPM () {
+      return Math.round(this.charactersCount / 5)
     }
   },
   watch: {
@@ -417,10 +482,80 @@ export default {
     }
   },
   async mounted () {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/firebase.User
+
+      } else {
+        console.log('User is signed out')
+      }
+
+      this.user = user;
+      console.log(user);
+    });
+
+    document.addEventListener('keyup', this.togglePauseListener);
+
     this.$refs.input.focus()
+  },
+  beforeDestroy() {
+    document.removeEventListener('keyup', this.togglePauseListener);
   },
   methods: {
     fetchText,
+    logout () {
+      auth.signOut();
+    },
+    auth () {
+      signInWithPopup(auth, new GoogleAuthProvider())
+        .then((result) => {
+          // This gives you a Google Access Token. You can use it to access the Google API.
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          // The signed-in user info.
+          const user = result.user;
+
+          console.log(token);
+          // ...
+        }).catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // The email of the user's account used.
+        const email = error.customData.email;
+        // The AuthCredential type that was used.
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        // ...
+
+        console.log(errorCode)
+      });
+
+      // ui.start('#firebaseui-auth-container', {
+      //   signInOptions: [
+      //     EmailAuthProvider.PROVIDER_ID,
+      //     GoogleAuthProvider.PROVIDER_ID,
+      //     PhoneAuthProvider.PROVIDER_ID,
+      //   ],
+      //   callbacks: {
+      //     signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+      //       console.log(authResult)
+      //
+      //       return true;
+      //     },
+      //   },
+      //   // Other config options...
+      // });
+    },
+    async togglePauseListener (e) {
+      if (e.key === 'Enter') {
+        this.timer.toggle();
+
+        await this.$nextTick()
+
+        this.$refs.input.focus()
+      }
+    },
     async resume () {
       this.timer.resume()
 
@@ -435,7 +570,11 @@ export default {
     startGame () {
       this.gameStarted = true
 
-      this.timer = new Timer(() => {
+      logEvent(analytics, 'game_start', {
+        userId: this.user.uid,
+      });
+
+      this.timer = new Timer(async () => {
         this.seconds++
 
         if (this.seconds === GAME_TIME - 10) {
@@ -447,6 +586,26 @@ export default {
           document.querySelector('#app').classList.remove('no-time')
 
           this.dialog = true
+
+          const doc = await addDoc(resultsCollection, {
+            WPM: this.WPM,
+            CPM: this.charactersCount,
+            userId: this.user.uid,
+            textSources: this.textSources.map(i => ({
+              URL: i.content_urls.desktop.page,
+              title: i.title,
+            })),
+            createdAt: Timestamp.now(),
+            lang: this.currentLang,
+          });
+
+          logEvent(analytics, 'game_results', {
+            WPM: this.WPM,
+            CPM: this.charactersCount,
+            userId: this.user.uid,
+            lang: this.currentLang,
+            docId: doc.id,
+          });
         }
       }, 1000)
     },
@@ -516,6 +675,10 @@ export default {
     pointer-events initial
 
 .text-main
+  position: absolute
+  left: 0
+  top: 0
+  right: 0
   display flex
   justify-content center
   margin-top 15%
