@@ -9,6 +9,7 @@
     "build": "nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate",
+    "build:netlify": "NODE_OPTIONS='--openssl-legacy-provider' nuxt build --spa",
     "build:gh-pages": "NODE_OPTIONS='--openssl-legacy-provider' cross-env DEPLOY_ENV=GH_PAGES nuxt build --spa",
     "generate:gh-pages": "cross-env DEPLOY_ENV=GH_PAGES nuxt generate",
     "deploy": "push-dir --dir=dist --branch=gh-pages --cleanup",
