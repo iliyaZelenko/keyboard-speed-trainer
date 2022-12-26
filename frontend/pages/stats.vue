@@ -34,6 +34,8 @@
 
         <VContainer>
           <canvas id="chart" />
+
+          <canvas id="chart-count" />
         </VContainer>
       </template>
     </template>
@@ -42,7 +44,7 @@
 
 <script>
 import { auth, resultsCollection } from '~/plugins/firebase'
-import { query, where, getDocs } from 'firebase/firestore'
+import { query, where, orderBy, getDocs } from 'firebase/firestore'
 import Chart from 'chart.js/auto'
 import { onAuthStateChanged } from 'firebase/auth'
 import LangSwitcher from '~/components/LangSwitcher.vue'
@@ -72,12 +74,23 @@ export default {
       const q = query(
         resultsCollection,
         where('userId', '==', auth.currentUser.uid),
-        where('lang', '==', this.currentLang)
+        where('lang', '==', this.currentLang),
+        orderBy('createdAt', 'asc')
       )
 
       const querySnapshot = await getDocs(q)
       const results = querySnapshot.docs.map(i => i.data())
-      const labels = results.map(i => i.createdAt.toDate().toLocaleDateString())
+      const toDate = date => date.toDate().toLocaleDateString()
+      const labels = results.map(i => toDate(i.createdAt))
+
+      const countByDate = results.reduce((groups, i) => {
+        const key = toDate(i.createdAt)
+        const count = (groups[key] || 0)
+        groups[key] = count + 1
+        return groups
+      }, {})
+
+      console.log(countByDate)
 
       const data = {
         labels,
@@ -124,6 +137,44 @@ export default {
           }
         }
       )
+      console.log(Object.values(countByDate))
+      // eslint-disable-next-line no-new
+      new Chart(
+        document.getElementById('chart-count'),
+        {
+          type: 'bar',
+          data: {
+            labels: Object.keys(countByDate),
+            datasets: [{
+              label: 'Number of attempts per day',
+              data: Object.values(countByDate)
+            }]
+          },
+          options: {
+            responsive: true,
+            interaction: {
+              intersect: false
+            },
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true
+                }
+              },
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: 'Value'
+                },
+                suggestedMin: 0,
+                suggestedMax: 30
+              }
+            }
+          }
+        }
+      )
     }
   }
 }
@@ -131,6 +182,10 @@ export default {
 
 <style lang="stylus" scoped>
 #chart
+  max-height 400px
+  margin-top 80px
+
+#chart-count
   max-height 400px
   margin-top 80px
 </style>
