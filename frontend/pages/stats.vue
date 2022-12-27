@@ -90,8 +90,6 @@ export default {
         return groups
       }, {})
 
-      console.log(countByDate)
-
       const data = {
         labels,
         datasets: [

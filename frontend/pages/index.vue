@@ -245,11 +245,19 @@
 
       <v-dialog
         v-model="dialog"
-        max-width="290"
+        max-width="300"
       >
         <v-card>
           <v-card-title class="headline">
-            Your result
+            <div
+              v-if="isRecord"
+              class="font-weight-black display-1 mb-3"
+            >
+              New record! 🎉
+            </div>
+            <template v-else>
+              Your result
+            </template>
           </v-card-title>
 
           <v-card-text>
@@ -267,6 +275,13 @@
             </span>
             {{ charactersCount }}
             <br>
+            <template v-if="previousRecord">
+              <span class="font-weight-bold">
+                Previous record (CPM):
+              </span>
+              {{ previousRecord }}
+              <br>
+            </template>
             <span class="font-weight-bold">
               Time:
             </span>
@@ -321,13 +336,44 @@ import { getAnalytics, logEvent } from "firebase/analytics";
 // import * as firebaseui from "firebaseui";
 // import "firebaseui/dist/firebaseui.css";
 import { signInWithPopup, setPersistence, browserLocalPersistence, onAuthStateChanged, getAuth, EmailAuthProvider, GoogleAuthProvider, PhoneAuthProvider } from "firebase/auth";
-import { addDoc, collection } from "firebase/firestore";
+import {addDoc, collection, orderBy, query, where, limit, getDocs} from "firebase/firestore";
 import { getFirestore, Timestamp } from "firebase/firestore";
 import {resultsCollection, analytics, auth} from "~/plugins/firebase";
+import JSConfetti from 'js-confetti'
+
+function arrGetRandom (list) {
+  return list[Math.floor((Math.random()*list.length))];
+}
+
+const jsConfetti = new JSConfetti()
+const confettiConfigs = [
+  {},
+  { confettiRadius: 12, confettiNumber: 100 },
+  { emojis: ['🌈', '⚡️', '💥', '✨', '💫', '🌸'] },
+  { emojis: ['⚡️', '💥', '✨', '💫'] },
+  { emojis: ['🦄'], confettiRadius: 100, confettiNumber: 30 },
+  { emojis: ['🔥'], confettiRadius: 120, confettiNumber: 35 },
+  { emojis: ['👍'], confettiRadius: 130, confettiNumber: 40 },
+  { emojis: ['👍', '🔥'], confettiRadius: 100, confettiNumber: 30 },
+  {
+    confettiColors: ['#ffbe0b', '#fb5607', '#ff006e', '#8338ec', '#3a86ff'],
+    confettiRadius: 10,
+    confettiNumber: 150,
+  },
+  {
+    confettiColors: ['#9b5de5', '#f15bb5', '#fee440', '#00bbf9', '#00f5d4'],
+    confettiRadius: 6,
+    confettiNumber: 300,
+  },
+]
 
 // Initialize the FirebaseUI Widget using Firebase.
 // const ui = new firebaseui.auth.AuthUI(auth);
-const userIdAnonymous = 'anonymous_' + new Date().toISOString();
+let userIdAnonymous = localStorage.getItem('userIdAnonymous')
+if (!userIdAnonymous) {
+  userIdAnonymous = 'anonymous_' + new Date().toISOString()
+  localStorage.setItem('userAnonymousId', userIdAnonymous)
+}
 
 // TODO отрефакторить
 var savedRange
@@ -409,6 +455,8 @@ export default {
       textVariant: 'text',
       showSettings: false,
       dialog: false,
+      isRecord: false,
+      previousRecord: null,
       gameStarted: false,
       // не использовать напрямую! Вместо этого через textWrittenFormatted
       textWritten: '',
@@ -422,6 +470,9 @@ export default {
     }
   },
   computed: {
+    userId () {
+      return this.user?.uid ?? userIdAnonymous;
+    },
     currentTextSource () {
       return this.textSources[this.textSources.length - 1]
     },
@@ -570,10 +621,8 @@ export default {
     startGame () {
       this.gameStarted = true
 
-      const userId = this.user ? this.user.uid : userIdAnonymous;
-
       logEvent(analytics, 'game_start', {
-        userId,
+        userId: this.userId,
       });
 
       this.timer = new Timer(async () => {
@@ -584,32 +633,53 @@ export default {
           document.querySelector('#app').classList.add('no-time')
         }
         if (this.seconds === GAME_TIME) {
-          this.timer.clear()
-          document.querySelector('#app').classList.remove('no-time')
-
-          this.dialog = true
-
-          const doc = await addDoc(resultsCollection, {
-            WPM: this.WPM,
-            CPM: this.charactersCount,
-            userId,
-            textSources: this.textSources.map(i => ({
-              URL: i.content_urls.desktop.page,
-              title: i.title,
-            })),
-            createdAt: Timestamp.now(),
-            lang: this.currentLang,
-          });
-
-          logEvent(analytics, 'game_results', {
-            WPM: this.WPM,
-            CPM: this.charactersCount,
-            userId,
-            lang: this.currentLang,
-            docId: doc.id,
-          });
+          this.onEnd()
         }
       }, 1000)
+    },
+    async onEnd () {
+      this.isRecord = false;
+      this.timer.clear()
+      document.querySelector('#app').classList.remove('no-time')
+
+      this.dialog = true
+
+      const doc = await addDoc(resultsCollection, {
+        WPM: this.WPM,
+        CPM: this.charactersCount,
+        userId: this.userId,
+        textSources: this.textSources.map(i => ({
+          URL: i.content_urls.desktop.page,
+          title: i.title,
+        })),
+        createdAt: Timestamp.now(),
+        lang: this.currentLang,
+      });
+
+      logEvent(analytics, 'game_results', {
+        WPM: this.WPM,
+        CPM: this.charactersCount,
+        userId: this.userId,
+        lang: this.currentLang,
+        docId: doc.id,
+      });
+
+      const recordDoc = (await getDocs(query(
+        resultsCollection,
+        where('userId', '==', this.userId),
+        where('lang', '==', this.currentLang),
+        orderBy('CPM', 'desc'),
+        limit(1),
+      ))).docs[0];
+
+      if (recordDoc) {
+        this.previousRecord = recordDoc.data().CPM;
+        this.isRecord = this.previousRecord < this.charactersCount;
+
+        if (this.isRecord) {
+          jsConfetti.addConfetti(arrGetRandom(confettiConfigs))
+        }
+      }
     },
     onInput ({ target }) {
       if (!this.gameStarted) this.startGame()
