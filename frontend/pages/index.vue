@@ -644,6 +644,13 @@ export default {
 
       this.dialog = true
 
+      const recordDoc = (await getDocs(query(
+        resultsCollection,
+        where('userId', '==', this.userId),
+        where('lang', '==', this.currentLang),
+        orderBy('CPM', 'desc'),
+        limit(1),
+      ))).docs[0];
       const doc = await addDoc(resultsCollection, {
         WPM: this.WPM,
         CPM: this.charactersCount,
@@ -664,17 +671,11 @@ export default {
         docId: doc.id,
       });
 
-      const recordDoc = (await getDocs(query(
-        resultsCollection,
-        where('userId', '==', this.userId),
-        where('lang', '==', this.currentLang),
-        orderBy('CPM', 'desc'),
-        limit(1),
-      ))).docs[0];
-
       if (recordDoc) {
         this.previousRecord = recordDoc.data().CPM;
         this.isRecord = this.previousRecord < this.charactersCount;
+
+        console.log(this.previousRecord, this.charactersCount, this.isRecord);
 
         if (this.isRecord) {
           jsConfetti.addConfetti(arrGetRandom(confettiConfigs))
