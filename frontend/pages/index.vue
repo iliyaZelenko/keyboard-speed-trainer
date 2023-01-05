@@ -526,7 +526,7 @@ export default {
         } = await this.fetchText(this.currentLang)
 
         this.textSources.push(textSource)
-        this.text += '|' + text
+        this.text += '/' + text
 
         this.loadingMoreText = false
       }
