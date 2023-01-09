@@ -85,7 +85,7 @@
       :fixed="fixed"
       app
     >
-      <span>Ilya Zelenko &copy; {{ year }}</span>
+      <span>Ilya Zelenko &copy; 2019-{{ year }}</span>
     </v-footer>
   </v-app>
 </template>
