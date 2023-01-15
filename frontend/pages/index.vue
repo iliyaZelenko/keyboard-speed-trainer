@@ -434,6 +434,16 @@ const GAME_TIME = 60
 
 export default {
   components: { LangSwitcher },
+  head: {
+    title: 'Computer Typing Practice Online',
+    meta: [
+      {
+        hid: 'description',
+        name: 'description',
+        content: 'Practice online computer typing speed. Typing speed test.'
+      }
+    ],
+  },
   async asyncData ({ app }) {
     const currentLang = app.$cookies.get('currentLang') || 'en'
     const { textSource, text } = await fetchText.call(app, currentLang)
